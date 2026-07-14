@@ -1,0 +1,12 @@
+[
+  { "subject": "Can't log in", "body": "I keep getting an invalid password error but I'm sure it's correct.", "expected_category": "account_access" },
+  { "subject": "Charged twice this month", "body": "My card was billed on the 1st and again on the 15th for the same plan.", "expected_category": "billing" },
+  { "subject": "App crashes on upload", "body": "Every time I upload a CSV over 5MB the page goes white and I have to refresh.", "expected_category": "bug_report" },
+  { "subject": "Dark mode please", "body": "Would love a dark theme option, the white background is rough at night.", "expected_category": "feature_request" },
+  { "subject": "How does the free trial work", "body": "Just signed up, want to know when I'll actually get billed.", "expected_category": "billing" },
+  { "subject": "Locked out after failed attempts", "body": "Tried logging in 5 times with the wrong password, now it says account locked.", "expected_category": "account_access" },
+  { "subject": "Export button does nothing", "body": "Clicking export on the reports page just spins forever, no file downloads.", "expected_category": "bug_report" },
+  { "subject": "Bulk import support", "body": "Any plans to support importing more than 100 rows at once?", "expected_category": "feature_request" },
+  { "subject": "Refund for annual plan", "body": "I upgraded to annual by mistake, can I get a prorated refund?", "expected_category": "billing" },
+  { "subject": "What is this product for", "body": "Saw an ad, not totally sure what the tool actually does, can someone explain?", "expected_category": "general_question" }
+]
