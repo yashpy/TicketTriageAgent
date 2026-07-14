@@ -60,10 +60,13 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.UseDefaultFiles();
+app.UseStaticFiles();
+
 app.UseCors();
 app.MapControllers();
 
-app.MapGet("/", () => Results.Ok(new
+app.MapGet("/api/status", () => Results.Ok(new
 {
     service = "Ticket Triage Agent",
     status = "running",

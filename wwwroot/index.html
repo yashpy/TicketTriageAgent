@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Ticket Triage — Agent Console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#10141a;
+    --panel:#161c24;
+    --panel-raised:#1c2430;
+    --line:#2a3340;
+    --paper:#eef1f4;
+    --dim:#8b97a6;
+    --teal:#2bd4a0;
+    --amber:#f0a92e;
+    --rose:#e6584f;
+    --blue:#5b8def;
+    --violet:#9d8cf0;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--ink);
+    color:var(--paper);
+    font-family:'Inter',system-ui,sans-serif;
+    min-height:100vh;
+    line-height:1.5;
+  }
+  .mono{font-family:'IBM Plex Mono',monospace;}
+
+  .topbar{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:20px 32px;border-bottom:1px solid var(--line);
+    position:sticky;top:0;background:rgba(16,20,26,0.92);backdrop-filter:blur(6px);
+    z-index:10;
+  }
+  .brand{display:flex;align-items:center;gap:12px;}
+  .brand-mark{
+    width:34px;height:34px;border-radius:8px;
+    background:linear-gradient(135deg,var(--teal),var(--blue));
+    display:flex;align-items:center;justify-content:center;
+    font-family:'IBM Plex Mono',monospace;font-weight:600;color:#0b0e12;font-size:15px;
+  }
+  .brand-name{font-weight:600;font-size:15px;letter-spacing:.2px;}
+  .brand-sub{font-size:12px;color:var(--dim);font-family:'IBM Plex Mono',monospace;}
+
+  .status-pill{
+    display:flex;align-items:center;gap:7px;font-size:12px;color:var(--dim);
+    font-family:'IBM Plex Mono',monospace;padding:6px 12px;border:1px solid var(--line);border-radius:20px;
+  }
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--teal);box-shadow:0 0 8px var(--teal);}
+  .dot.offline{background:var(--rose);box-shadow:0 0 8px var(--rose);}
+
+  .layout{
+    max-width:1180px;margin:0 auto;padding:28px 32px 80px;
+    display:grid;grid-template-columns:360px 1fr;gap:24px;
+  }
+  @media (max-width:860px){ .layout{grid-template-columns:1fr;} }
+
+  .card{
+    background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:20px;
+  }
+  .card + .card{margin-top:20px;}
+
+  .card h2{
+    margin:0 0 4px;font-size:13px;text-transform:uppercase;letter-spacing:.08em;
+    color:var(--dim);font-weight:600;
+  }
+  .card h1.form-title{
+    margin:0 0 16px;font-size:19px;font-weight:700;color:var(--paper);
+  }
+
+  label{display:block;font-size:12px;color:var(--dim);margin:14px 0 6px;font-weight:500;}
+  input[type=text], textarea{
+    width:100%;background:var(--panel-raised);border:1px solid var(--line);border-radius:8px;
+    color:var(--paper);padding:10px 12px;font-family:'Inter',sans-serif;font-size:14px;
+    resize:vertical;
+  }
+  textarea{min-height:110px;}
+  input:focus, textarea:focus{outline:none;border-color:var(--blue);}
+
+  button{
+    font-family:'Inter',sans-serif;font-weight:600;font-size:14px;cursor:pointer;
+    border:none;border-radius:8px;padding:11px 18px;
+  }
+  .btn-primary{
+    width:100%;margin-top:18px;background:var(--teal);color:#08251c;
+  }
+  .btn-primary:disabled{opacity:.5;cursor:wait;}
+  .btn-primary:hover:not(:disabled){filter:brightness(1.08);}
+
+  .btn-ghost{background:transparent;border:1px solid var(--line);color:var(--paper);font-size:12px;padding:7px 12px;}
+  .btn-ghost.approve:hover{border-color:var(--teal);color:var(--teal);}
+  .btn-ghost.reject:hover{border-color:var(--rose);color:var(--rose);}
+
+  .stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px;}
+  .stat{background:var(--panel-raised);border-radius:8px;padding:12px;}
+  .stat-num{font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:600;}
+  .stat-label{font-size:11px;color:var(--dim);margin-top:2px;}
+
+  .feed-header{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:14px;}
+  .feed-header h1{font-size:19px;margin:0;font-weight:700;}
+  .feed-count{font-size:12px;color:var(--dim);font-family:'IBM Plex Mono',monospace;}
+
+  .empty-state{
+    border:1px dashed var(--line);border-radius:12px;padding:48px 20px;text-align:center;color:var(--dim);
+  }
+  .empty-state .glyph{font-size:26px;margin-bottom:10px;opacity:.6;}
+
+  .ticket{
+    background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    margin-bottom:14px;overflow:hidden;transition:border-color .15s;
+  }
+  .ticket:hover{border-color:#3a4554;}
+  .ticket-head{
+    display:flex;align-items:center;gap:14px;padding:16px 18px;cursor:pointer;
+  }
+  .ticket-subject{font-weight:600;font-size:14.5px;flex:1;min-width:0;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .badge{
+    font-family:'IBM Plex Mono',monospace;font-size:11px;padding:4px 9px;border-radius:20px;
+    white-space:nowrap;font-weight:500;
+  }
+  .badge.auto{background:rgba(43,212,160,.14);color:var(--teal);}
+  .badge.pending{background:rgba(240,169,46,.14);color:var(--amber);}
+  .badge.approved{background:rgba(91,141,239,.14);color:var(--blue);}
+  .badge.rejected{background:rgba(230,88,79,.14);color:var(--rose);}
+  .badge.other{background:rgba(157,140,240,.14);color:var(--violet);}
+
+  .cat-tag{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--dim);}
+  .chevron{color:var(--dim);font-size:12px;transition:transform .15s;flex-shrink:0;}
+  .ticket.open .chevron{transform:rotate(90deg);}
+
+  .ticket-body{display:none;padding:0 18px 20px;border-top:1px solid var(--line);}
+  .ticket.open .ticket-body{display:block;padding-top:16px;}
+
+  .body-text{font-size:13.5px;color:var(--dim);margin-bottom:16px;}
+  .draft-box{
+    background:var(--panel-raised);border-left:2px solid var(--teal);border-radius:6px;
+    padding:12px 14px;font-size:13.5px;margin-bottom:16px;
+  }
+  .draft-box .label{font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;font-family:'IBM Plex Mono',monospace;}
+
+  .trail{position:relative;margin-left:6px;padding-left:20px;border-left:2px solid var(--line);}
+  .trail-step{position:relative;padding-bottom:16px;}
+  .trail-step:last-child{padding-bottom:0;}
+  .trail-step::before{
+    content:'';position:absolute;left:-26px;top:3px;width:9px;height:9px;border-radius:50%;
+    background:var(--blue);border:2px solid var(--ink);
+  }
+  .trail-step-head{display:flex;align-items:center;gap:10px;margin-bottom:3px;}
+  .trail-step-name{font-family:'IBM Plex Mono',monospace;font-size:12.5px;font-weight:600;text-transform:capitalize;}
+  .trail-duration{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--dim);}
+  .trail-output{font-size:12.5px;color:var(--dim);}
+
+  .approval-row{display:flex;gap:10px;margin-top:16px;padding-top:16px;border-top:1px dashed var(--line);}
+
+  .error-banner{
+    background:rgba(230,88,79,.1);border:1px solid rgba(230,88,79,.3);color:var(--rose);
+    border-radius:8px;padding:10px 14px;font-size:13px;margin-top:12px;
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">
+    <div class="brand-mark">TT</div>
+    <div>
+      <div class="brand-name">Ticket Triage Console</div>
+      <div class="brand-sub">classify → retrieve → draft → decide</div>
+    </div>
+  </div>
+  <div class="status-pill"><span class="dot" id="statusDot"></span><span id="statusText">checking…</span></div>
+</div>
+
+<div class="layout">
+
+  <div>
+    <div class="card">
+      <h1 class="form-title">Submit a ticket</h1>
+      <label for="subject">Subject</label>
+      <input type="text" id="subject" placeholder="Can't log into my account" />
+      <label for="body">Body</label>
+      <textarea id="body" placeholder="Describe the issue exactly as the customer wrote it…"></textarea>
+      <button class="btn-primary" id="submitBtn" onclick="submitTicket()">Run through agent</button>
+      <div id="submitError"></div>
+    </div>
+
+    <div class="card">
+      <h2>Eval stats</h2>
+      <div class="stats-grid" id="statsGrid">
+        <div class="stat"><div class="stat-num mono" id="statTotal">—</div><div class="stat-label">Total tickets</div></div>
+        <div class="stat"><div class="stat-num mono" id="statAutoRate">—</div><div class="stat-label">Auto-resolve rate</div></div>
+        <div class="stat"><div class="stat-num mono" id="statClsConf">—</div><div class="stat-label">Avg classify confidence</div></div>
+        <div class="stat"><div class="stat-num mono" id="statDraftConf">—</div><div class="stat-label">Avg draft confidence</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div class="feed-header">
+      <h1>Ticket feed</h1>
+      <span class="feed-count mono" id="feedCount"></span>
+    </div>
+    <div id="ticketFeed">
+      <div class="empty-state">
+        <div class="glyph">◌</div>
+        Loading tickets…
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const API = '/api/tickets';
+
+const STATUS_MAP = {
+  0: {label:'new', cls:'other'},
+  1: {label:'classified', cls:'other'},
+  2: {label:'drafted', cls:'other'},
+  3: {label:'pending approval', cls:'pending'},
+  4: {label:'auto-resolved', cls:'auto'},
+  5: {label:'approved', cls:'approved'},
+  6: {label:'rejected', cls:'rejected'},
+};
+
+function esc(s){
+  const d = document.createElement('div');
+  d.textContent = s ?? '';
+  return d.innerHTML;
+}
+
+function fmtPct(n){ return n == null ? '—' : Math.round(n*100) + '%'; }
+
+async function checkHealth(){
+  const dot = document.getElementById('statusDot');
+  const text = document.getElementById('statusText');
+  try{
+    const res = await fetch('/api/status');
+    if(!res.ok) throw new Error();
+    text.textContent = 'agent online';
+  }catch(e){
+    dot.classList.add('offline');
+    text.textContent = 'agent unreachable';
+  }
+}
+
+async function loadStats(){
+  try{
+    const res = await fetch(API + '/stats');
+    const s = await res.json();
+    document.getElementById('statTotal').textContent = s.totalTickets ?? 0;
+    document.getElementById('statAutoRate').textContent = fmtPct(s.autoResolveRate);
+    document.getElementById('statClsConf').textContent = fmtPct(s.averageClassificationConfidence);
+    document.getElementById('statDraftConf').textContent = fmtPct(s.averageDraftConfidence);
+  }catch(e){ /* stats are best-effort */ }
+}
+
+function ticketCard(t){
+  const st = STATUS_MAP[t.status] || {label:'unknown', cls:'other'};
+  const trail = (t.reasoningTrail || []).map(step => `
+    <div class="trail-step">
+      <div class="trail-step-head">
+        <span class="trail-step-name">${esc(step.stepName)}</span>
+        <span class="trail-duration">${step.durationMs}ms</span>
+      </div>
+      <div class="trail-output">${esc(step.output)}</div>
+    </div>
+  `).join('');
+
+  const showApproval = t.status === 3; // PendingApproval
+
+  return `
+  <div class="ticket" id="ticket-${t.id}">
+    <div class="ticket-head" onclick="toggleTicket('${t.id}')">
+      <span class="chevron">▶</span>
+      <span class="ticket-subject">${esc(t.subject)}</span>
+      ${t.category ? `<span class="cat-tag">${esc(t.category)}</span>` : ''}
+      <span class="badge ${st.cls}">${st.label}</span>
+    </div>
+    <div class="ticket-body">
+      <div class="body-text">${esc(t.body)}</div>
+      ${t.draftResponse ? `
+        <div class="draft-box">
+          <div class="label">Drafted response · confidence ${fmtPct(t.draftConfidence)}</div>
+          ${esc(t.draftResponse)}
+        </div>` : ''}
+      ${trail ? `<div class="trail">${trail}</div>` : ''}
+      ${showApproval ? `
+        <div class="approval-row">
+          <button class="btn-ghost approve" onclick="decide('${t.id}','approve')">Approve</button>
+          <button class="btn-ghost reject" onclick="decide('${t.id}','reject')">Reject</button>
+        </div>` : ''}
+    </div>
+  </div>`;
+}
+
+function toggleTicket(id){
+  document.getElementById('ticket-' + id).classList.toggle('open');
+}
+
+async function decide(id, action){
+  const body = action === 'approve' ? {note:'Approved from console'} : {reason:'Rejected from console'};
+  try{
+    await fetch(`${API}/${id}/${action}`, {
+      method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)
+    });
+    loadTickets();
+    loadStats();
+  }catch(e){ /* swallow, feed refresh will show current truth */ }
+}
+
+async function loadTickets(){
+  const feed = document.getElementById('ticketFeed');
+  try{
+    const res = await fetch(API);
+    const tickets = await res.json();
+    document.getElementById('feedCount').textContent = tickets.length + (tickets.length === 1 ? ' ticket' : ' tickets');
+    if(tickets.length === 0){
+      feed.innerHTML = `<div class="empty-state"><div class="glyph">◌</div>No tickets yet — submit one on the left.</div>`;
+      return;
+    }
+    feed.innerHTML = tickets
+      .slice()
+      .reverse()
+      .map(ticketCard)
+      .join('');
+  }catch(e){
+    feed.innerHTML = `<div class="error-banner">Couldn't load tickets. Is the API running?</div>`;
+  }
+}
+
+async function submitTicket(){
+  const subject = document.getElementById('subject').value.trim();
+  const body = document.getElementById('body').value.trim();
+  const btn = document.getElementById('submitBtn');
+  const errBox = document.getElementById('submitError');
+  errBox.innerHTML = '';
+
+  if(!subject || !body){
+    errBox.innerHTML = `<div class="error-banner">Subject and body are both required.</div>`;
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Running pipeline…';
+
+  try{
+    const res = await fetch(API, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({subject, body})
+    });
+    if(!res.ok){
+      const msg = await res.text();
+      throw new Error(msg || ('HTTP ' + res.status));
+    }
+    document.getElementById('subject').value = '';
+    document.getElementById('body').value = '';
+    await loadTickets();
+    await loadStats();
+  }catch(e){
+    errBox.innerHTML = `<div class="error-banner">${esc(e.message || 'Request failed')}</div>`;
+  }finally{
+    btn.disabled = false;
+    btn.textContent = 'Run through agent';
+  }
+}
+
+checkHealth();
+loadTickets();
+loadStats();
+</script>
+</body>
+</html>
