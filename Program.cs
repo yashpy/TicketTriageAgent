@@ -28,7 +28,11 @@ if (!string.IsNullOrWhiteSpace(envGroqKey))
 builder.Services.AddHttpClient<IClassificationService, GroqClassificationService>();
 
 // --- Knowledge base (RAG) ---
-builder.Services.AddSingleton<IKnowledgeBaseService, InMemoryKnowledgeBaseService>();
+// Real vector search: TF-IDF embeddings + cosine similarity, computed at startup
+// from KnowledgeBase/articles.json. No external embedding API, no vector DB service.
+// To go back to plain keyword-overlap matching, swap the line below for:
+//   builder.Services.AddSingleton<IKnowledgeBaseService, InMemoryKnowledgeBaseService>();
+builder.Services.AddSingleton<IKnowledgeBaseService, VectorKnowledgeBaseService>();
 
 // --- Repository: Mongo if configured, otherwise in-memory (zero-setup default) ---
 var useMongo = builder.Configuration.GetValue<bool>($"{MongoOptions.SectionName}:UseMongo");
